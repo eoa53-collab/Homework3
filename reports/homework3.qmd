@@ -1,15 +1,9 @@
 ---
 title: "STA 556 — Homework 3"
 subtitle: "Reproducibility & Matrix Computation"
-format:
-  html:
-    embed-resources: true
-    code-fold: false
+author: "Elliot Owusu Addo"
+format: html
 jupyter: python3
-execute:
-  echo: true
-  warning: false
-  message: false
 ---
 
 # Part 1
