@@ -1,6 +1,6 @@
 ## Project structure
 
-- `data/student_performance.csv` — found in the data folder
+- `data/student_performance.csv` — contains data used for this project
 - `reports/homework3.qmd` — executable Quarto report.
 - `reports/homework3.html` — HTML output accompanying the report.
 - `_quarto.yml` — sets execution directory to project root so relative paths work consistently.
