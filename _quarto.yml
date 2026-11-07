@@ -1,0 +1,5 @@
+project:
+  type: default
+  execute-dir: project
+  render:
+    - reports/homework3.qmd

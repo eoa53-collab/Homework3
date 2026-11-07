@@ -1,0 +1,274 @@
+---
+title: "STA 556 — Homework 3"
+subtitle: "Reproducibility & Matrix Computation"
+format:
+  html:
+    embed-resources: true
+    code-fold: false
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Part 1
+
+## 1.1 Introduction
+
+I used the **Student performance** data, a synthetic dataset provided for STA 556. The response variable is `final_score`, and the three predictors are `study_hours_per_week`, `attendance_pct`, and `prior_score`. The goal is to fit and diagnose a linear model using NumPy matrix computation. Because these data are synthetic, the fitted relationships are descriptive and should not be interpreted as causal effects.
+
+## 1.2 Data inspection and validation
+
+The data is loaded using a path relative to the **repository root**. The accompanying `_quarto.yml` sets `execute-dir: project`, so the same code runs correctly when `quarto render reports/homework3.qmd` is called from the root.
+
+```{python}
+import numpy as np
+import pandas as pd
+from IPython.display import Markdown, display
+
+# Load the provided data without changing their values.
+df = pd.read_csv("data/student_performance.csv")
+```
+
+**Viewing the first five observations**
+
+```{python}
+df.head()
+```
+
+**Displaying the number of rows and columns**
+
+```{python}
+df.shape
+```
+
+**Displaying data types of columns**
+
+```{python}
+df.dtypes
+```
+
+**Cheking if there are any missing values by column**
+
+```{python}
+df.isna().sum()
+```
+
+*Checking for uniqueness of the ID column**
+
+```{python}
+df["id"].is_unique
+```
+
+```{python}
+# Checking basic data assumptions before matrix computation.
+predictor_columns = [
+    "study_hours_per_week",
+    "attendance_pct",
+    "prior_score"
+]
+
+assert df["id"].is_unique
+assert df[predictor_columns + ["final_score"]].notna().all().all()
+
+display(Markdown(
+    f"The dataset contains **{df.shape[0]} observations** and "
+    f"**{df.shape[1]} variables**. "
+    f"There are **{df.isna().sum().sum()} missing values** across the dataset. "
+    f"The `id` column is {'unique for every student' if df['id'].is_unique else 'not unique'}. "
+    "These checks support using the supplied rows in the linear-model calculation."
+))
+```
+
+## 1.3 Reproducibility requirements
+
+All tables and numerical results in this report are created by the Python code shown in the report. The code executes from top to bottom in a clean session, does not require manually entered numerical results or hidden notebook variables, and reads the unmodified provided CSV from `data/student_performance.csv`. The root-level `_quarto.yml` sets the project root as the execution directory.
+
+# Part 2 
+
+## NumPy arrays
+
+```{python}
+predictors = df[
+    [
+        "study_hours_per_week",
+        "attendance_pct",
+        "prior_score"
+    ]
+].to_numpy()
+
+y = df["final_score"].to_numpy()
+```
+
+## Standardize the predictors using NumPy
+
+```{python}
+means = predictors.mean(axis=0)
+sds = predictors.std(axis=0)
+
+assert np.all(sds > 0)
+
+Z = (predictors - means) / sds
+
+print("Means of standardized predictors:", Z.mean(axis=0))
+print("SDs of standardized predictors:", Z.std(axis=0))
+```
+
+## Construct the design matrix
+
+```{python}
+X = np.column_stack([
+    np.ones(len(Z)),
+    Z
+])
+
+matrix_summary = pd.DataFrame({
+    "Array": ["predictors", "Z", "X", "y"],
+    "Shape": [str(predictors.shape), str(Z.shape), str(X.shape), str(y.shape)]
+})
+
+display(matrix_summary)
+print("Matrix rank of X:", np.linalg.matrix_rank(X))
+print("Number of predictors (excluding intercept):", Z.shape[1])
+```
+
+**Written response (Part 2).** The design matrix `X` and response `y` need compatible shapes so there is one response for every row of the design matrix. The intercept column of ones allows the model to estimate a baseline outcome rather than forcing its fitted relationship through zero. Standardizing each predictor subtracts its mean and divides by its standard deviation, which puts predictors on comparable scales with means near zero and standard deviations near one. NumPy broadcasting applies the three-element vectors `means` and `sds` across every row of the predictor matrix without needing a separate Python loop.
+
+# Part 3 
+
+## Estimated coefficients
+
+```{python}
+beta_hat, *_ = np.linalg.lstsq( X,y,rcond=None)
+
+coefficient_names = [
+    "Intercept",
+    "study_hours_per_week (standardized)",
+    "attendance_pct (standardized)",
+    "prior_score (standardized)"
+]
+
+coefficient_table = pd.DataFrame({
+    "Coefficient": coefficient_names,
+    "Estimate": beta_hat
+})
+
+display(coefficient_table.round(4))
+
+largest_index = np.argmax(np.abs(beta_hat[1:]))
+largest_name = predictor_columns[largest_index]
+
+display(Markdown(
+    f"The **intercept** is **{beta_hat[0]:.4f}**. "
+    f"Of the three standardized predictors, **`{largest_name}`** has the "
+    f"largest absolute coefficient (**{beta_hat[largest_index + 1]:.4f}**)."
+))
+```
+
+## Fitted values and residuals
+
+```{python}
+fitted = X @ beta_hat
+residuals = y - fitted
+
+rmse = np.sqrt(
+    np.mean(
+        residuals ** 2
+    )
+)
+
+residual_summary = pd.DataFrame({
+    "Quantity": ["Residual mean", "RMSE"],
+    "Value": [residuals.mean(), rmse]
+})
+
+display(residual_summary)
+print("Shape of X * beta_hat:", (X * beta_hat).shape)
+print("Shape of X @ beta_hat:", (X @ beta_hat).shape)
+```
+
+**Written response (Part 3).** `X @ beta_hat` performs matrix multiplication to calculate one fitted final score for every student. When the model includes an intercept, ordinary least squares makes the residuals sum to approximately zero, apart from small floating-point rounding differences. RMSE summarizes the typical size of the residuals in final-score units, with larger errors receiving extra weight because they are squared. `X * beta_hat` performs element-wise multiplication and returns a matrix of contributions, whereas `X @ beta_hat` combines those contributions into the fitted-value vector.
+
+# Part 4 
+
+## QR decomposition
+
+```{python}
+Q, R = np.linalg.qr(X)
+
+print("Shape of Q:", Q.shape)
+print("Shape of R:", R.shape)
+print("Q @ R approximately equals X:", np.allclose(Q @ R, X))
+print("Q.T @ Q approximately equals I:", np.allclose(Q.T @ Q, np.eye(Q.shape[1])))
+```
+
+## Singular value decomposition (SVD)
+
+```{python}
+U, s, Vt = np.linalg.svd(
+    X,
+    full_matrices=False
+)
+
+print("Shape of U:", U.shape)
+print("Shape of s:", s.shape)
+print("Shape of Vt:", Vt.shape)
+print("Singular values:", s)
+
+X_reconstructed = (
+    U
+    @ np.diag(s)
+    @ Vt
+)
+
+print("SVD reconstructs X:", np.allclose(X_reconstructed, X))
+```
+
+## Rank and conditioning
+
+```{python}
+X_raw = np.column_stack([
+    np.ones(len(predictors)),
+    predictors
+])
+
+rank_X = np.linalg.matrix_rank(X)
+cond_X = np.linalg.cond(X)
+cond_X_raw = np.linalg.cond(X_raw)
+
+condition_summary = pd.DataFrame({
+    "Diagnostic": ["Rank of X", "Condition number of X", "Condition number of X_raw"],
+    "Value": [rank_X, cond_X, cond_X_raw]
+})
+
+display(condition_summary.round(4))
+```
+
+**Written response (Part 4).** The check `Q @ R ≈ X` verifies that the QR factors reconstruct the original standardized design matrix. The check `Q.T @ Q ≈ I` verifies that the columns of `Q` are orthonormal. The SVD singular values describe the strength of the independent directions in `X`, and a singular value close to zero would suggest a weak or nearly redundant direction. A large condition number indicates that numerical calculations may be sensitive to small changes in the data. The following comparison shows whether standardization changes the condition number.
+
+```{python}
+display(Markdown(
+    f"The condition number decreased from **{cond_X_raw:,.4f}** for the raw "
+    f"design matrix to **{cond_X:.4f}** after standardization. "
+    "The raw matrix combines an intercept with predictors measured in different "
+    "units and having nonzero means, which can inflate its condition number. "
+    "The low standardized condition number and singular values that are not "
+    "close to zero show no evidence of severe near-redundancy among the "
+    "standardized predictors."
+))
+```
+
+# Part 5 
+
+Clean execution matters because another researcher should be able to recreate the report from the same source data and code without making extra corrections. When a report runs from the first line to the last line in a fresh session, it gives stronger evidence that the results do not depend on earlier experiments or forgotten commands. It also makes errors easier to find because each step has a clear place in the workflow.
+
+Reusable code should not depend on hidden notebook state. For example, a variable created in a cell that was executed yesterday might still be in memory even if that cell was later removed. The notebook could appear to work for one person but fail when somebody else runs it from the beginning. In this homework, the data are loaded first, and every matrix is created from objects defined earlier in the same report.
+
+For fitting the regression model, `np.linalg.lstsq()` is preferable to explicitly calculating `(X.T @ X)^(-1) @ X.T @ y`. Directly forming and inverting `X.T @ X` can make numerical problems worse, especially when predictors are closely related. The least-squares routine uses numerical methods designed to handle the calculation more reliably.
+
+Floating-point operations also explain why `np.allclose()` is preferable to exact equality when checking QR and SVD reconstructions. Matrix factorizations involve many calculations that can introduce very small rounding differences. `np.allclose()` checks whether the results agree within an appropriate tolerance instead of demanding identical stored numbers.
+
+The condition-number comparison taught me that the scale and centering of predictors can strongly affect numerical diagnostics. A raw design matrix may look poorly conditioned because columns use different units and ranges, while standardization can improve the numerical balance. However, standardization does not automatically solve true redundancy between predictors. One reproducibility practice I will carry into the final project is keeping the raw data unchanged and generating every result from ordered code using documented relative file paths.
+
+
