@@ -55,7 +55,7 @@ df.dtypes
 df.isna().sum()
 ```
 
-*Checking for uniqueness of the ID column**
+**Checking for uniqueness of the ID column**
 
 ```{python}
 df["id"].is_unique
@@ -133,7 +133,7 @@ print("Matrix rank of X:", np.linalg.matrix_rank(X))
 print("Number of predictors (excluding intercept):", Z.shape[1])
 ```
 
-**Written response (Part 2).** The design matrix `X` and response `y` need compatible shapes so there is one response for every row of the design matrix. The intercept column of ones allows the model to estimate a baseline outcome rather than forcing its fitted relationship through zero. Standardizing each predictor subtracts its mean and divides by its standard deviation, which puts predictors on comparable scales with means near zero and standard deviations near one. NumPy broadcasting applies the three-element vectors `means` and `sds` across every row of the predictor matrix without needing a separate Python loop.
+The design matrix `X` and response `y` need compatible shapes so there is one response for every row of the design matrix. The intercept column of ones allows the model to estimate a baseline outcome rather than forcing its fitted relationship through zero. Standardizing each predictor subtracts its mean and divides by its standard deviation, which puts predictors on comparable scales with means near zero and standard deviations near one. NumPy broadcasting applies the three-element vectors `means` and `sds` across every row of the predictor matrix without needing a separate Python loop.
 
 # Part 3 
 
@@ -188,7 +188,7 @@ print("Shape of X * beta_hat:", (X * beta_hat).shape)
 print("Shape of X @ beta_hat:", (X @ beta_hat).shape)
 ```
 
-**Written response (Part 3).** `X @ beta_hat` performs matrix multiplication to calculate one fitted final score for every student. When the model includes an intercept, ordinary least squares makes the residuals sum to approximately zero, apart from small floating-point rounding differences. RMSE summarizes the typical size of the residuals in final-score units, with larger errors receiving extra weight because they are squared. `X * beta_hat` performs element-wise multiplication and returns a matrix of contributions, whereas `X @ beta_hat` combines those contributions into the fitted-value vector.
+`X @ beta_hat` performs matrix multiplication to calculate one fitted final score for every student. When the model includes an intercept, ordinary least squares makes the residuals sum to approximately zero, apart from small floating-point rounding differences. RMSE summarizes the typical size of the residuals in final-score units, with larger errors receiving extra weight because they are squared. `X * beta_hat` performs element-wise multiplication and returns a matrix of contributions, whereas `X @ beta_hat` combines those contributions into the fitted-value vector.
 
 # Part 4 
 
@@ -245,7 +245,7 @@ condition_summary = pd.DataFrame({
 display(condition_summary.round(4))
 ```
 
-**Written response (Part 4).** The check `Q @ R ≈ X` verifies that the QR factors reconstruct the original standardized design matrix. The check `Q.T @ Q ≈ I` verifies that the columns of `Q` are orthonormal. The SVD singular values describe the strength of the independent directions in `X`, and a singular value close to zero would suggest a weak or nearly redundant direction. A large condition number indicates that numerical calculations may be sensitive to small changes in the data. The following comparison shows whether standardization changes the condition number.
+The check `Q @ R ≈ X` verifies that the QR factors reconstruct the original standardized design matrix. The check `Q.T @ Q ≈ I` verifies that the columns of `Q` are orthonormal. The SVD singular values describe the strength of the independent directions in `X`, and a singular value close to zero would suggest a weak or nearly redundant direction. A large condition number indicates that numerical calculations may be sensitive to small changes in the data. The following comparison shows whether standardization changes the condition number.
 
 ```{python}
 display(Markdown(

@@ -1,5 +1,5 @@
 numpy
 pandas
-jupyter
+Quarto
 ipykernel
 

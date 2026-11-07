@@ -13,7 +13,7 @@ Run from the repository root in an environment with Quarto, Python, NumPy, panda
 quarto render reports/homework3.qmd
 ```
 
-# If Quarto is not in installed run the following in your terminal:
+### If Quarto is not in installed run the following in your terminal:
 
 wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.10.19/quarto-1.10.19-linux-amd64.deb
 
